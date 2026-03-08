@@ -1,1 +1,1 @@
-from tests.PredictTest import *  # noqa
+from tests.test_predict import *  # noqa

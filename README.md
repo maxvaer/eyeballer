@@ -42,17 +42,22 @@ Parked domains are websites that look real, but aren't valid attack surface. The
 
 ## Setup
 
-Download required packages on pip:
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if you haven't already:
 ```
-sudo pip3 install -r requirements.txt
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Then install eyeballer and its dependencies:
+```
+uv sync
 ```
 
 Or if you want GPU support:
 ```
-sudo pip3 install -r requirements-gpu.txt
+uv sync --extra gpu
 ```
 
-**NOTE**: Setting up a GPU for use with TensorFlow is way beyond the scope of this README. There's hardware compatibility to consider, drivers to install... There's a lot. So you're just going to have to figure this part out on your own if you want a GPU. But at least from a Python package perspective, the above requirements file has you covered.
+**NOTE**: Setting up a GPU for use with TensorFlow is way beyond the scope of this README. There's hardware compatibility to consider, drivers to install... There's a lot. So you're just going to have to figure this part out on your own if you want a GPU. But at least from a Python package perspective, the above command has you covered.
 
 **Pretrained Weights**
 
@@ -82,13 +87,13 @@ NOTE: For best results, make sure you screenshot your websites in a native 1.6x 
 To eyeball some screenshots, just run the "predict" mode:
 
 ```
-eyeballer.py --weights YOUR_WEIGHTS.h5 predict YOUR_FILE.png
+uv run eyeballer.py --weights YOUR_WEIGHTS.h5 predict YOUR_FILE.png
 ```
 
 Or for a whole directory of files:
 
 ```
-eyeballer.py --weights YOUR_WEIGHTS.h5 predict PATH_TO/YOUR_FILES/
+uv run eyeballer.py --weights YOUR_WEIGHTS.h5 predict PATH_TO/YOUR_FILES/
 ```
 
 Eyeballer will spit the results back to you in human readable format (a `results.html` file so you can browse it easily) and machine readable format (a `results.csv` file).
@@ -118,7 +123,7 @@ For a detailed explanation on [Precision vs Recall, check out Wikipedia](https:/
 ## Training
 To train a new model, run:
 ```
-eyeballer.py train
+uv run eyeballer.py train
 ```
 
 You'll want a machine with a good GPU for this to run in a reasonable amount of time. Setting that up is outside the scope of this readme, however.
@@ -130,7 +135,7 @@ This will output a new model file (weights.h5 by default).
 You just trained a new model, cool! Let's see how well it performs against some images it's never seen before, across a variety of metrics:
 
 ```
-eyeballer.py --weights YOUR_WEIGHTS.h5 evaluate
+uv run eyeballer.py --weights YOUR_WEIGHTS.h5 evaluate
 ```
 
 The output will describe the model's accuracy in both recall and precision for each of the program's labels. (Including "none of the above" as a pseudo-label)

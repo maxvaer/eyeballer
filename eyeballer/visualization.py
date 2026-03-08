@@ -11,8 +11,11 @@ class HeatMap():
     def __init__(self, screenshot_path, model, threshold=0.5, boxsize=28, step=7):
         self.model = model
 
-        img = tf.keras.preprocessing.image.load_img(screenshot_path, target_size=(self.model.image_width, self.model.image_height))
-        img = tf.keras.preprocessing.image.img_to_array(img)
+        try:
+            img = tf.keras.preprocessing.image.load_img(screenshot_path, target_size=(self.model.image_width, self.model.image_height))
+            img = tf.keras.preprocessing.image.img_to_array(img)
+        except Exception:
+            img = None
 
         self.screenshot = img
         self.boxsize = boxsize

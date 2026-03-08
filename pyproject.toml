@@ -1,0 +1,35 @@
+[project]
+name = "eyeballer"
+version = "3.0.0"
+description = "Give those screenshots of yours a quick eyeballing."
+requires-python = ">=3.8"
+dependencies = [
+    "Augmentor",
+    "click",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "pillow",
+    "scikit-learn",
+    "tensorflow",
+    "jinja2",
+    "progressbar2",
+    "scipy",
+]
+
+[project.optional-dependencies]
+gpu = [
+    "tensorflow[and-cuda]",
+]
+
+[project.scripts]
+eyeballer = "eyeballer:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+]
