@@ -42,56 +42,84 @@ Parked domains are websites that look real, but aren't valid attack surface. The
 
 ## Setup
 
-Download required packages on pip:
-```
-sudo pip3 install -r requirements.txt
-```
+This fork requires **Python 3.11–3.13** and **TensorFlow ≥ 2.16** (Keras 3).
 
-Or if you want GPU support:
 ```
-sudo pip3 install -r requirements-gpu.txt
+pip install -r requirements.txt
 ```
-
-**NOTE**: Setting up a GPU for use with TensorFlow is way beyond the scope of this README. There's hardware compatibility to consider, drivers to install... There's a lot. So you're just going to have to figure this part out on your own if you want a GPU. But at least from a Python package perspective, the above requirements file has you covered.
 
 **Pretrained Weights**
 
-For the latest pretrained weights, check out the releases here on GitHub.
-
-**Training Data** You can find our training data here:
-
-https://www.kaggle.com/altf42600/pentest-screensots
-
-There's two things you need from the training data:
-
-1. `images/` folder, containing all the screenshots (resized down to 224x224)
-2. `labels.csv` that has all the labels
-
-Copy both into the root of the Eyeballer code tree.
-
-Additionally, you can find a pretrained weights file you can use right out of the box without training.  
-
-1. `bishop-fox-pretrained-vN.h5`
-
-It's here on GitHub, look at the `releases` section for the latest one.
+Download `eyeballer-v3.weights.h5` from the [releases page](https://github.com/maxvaer/eyeballer/releases) and place it in the root of the repository. This is the only file needed for prediction.
 
 ## Predicting Labels
 
 NOTE: For best results, make sure you screenshot your websites in a native 1.6x aspect ratio. IE: 1440x900. Eyeballer will scale the image down automatically to the right size for you, but if it's the wrong aspect ratio then it will squish in a way that will affect prediction performance.
 
-To eyeball some screenshots, just run the "predict" mode:
+To eyeball a single screenshot:
+
+```
+eyeballer.py predict YOUR_FILE.png
+```
+
+Or a whole directory of files:
+
+```
+eyeballer.py predict PATH_TO/YOUR_FILES/
+```
+
+For multi-file runs, Eyeballer writes:
+- `results.html` — browsable visual report
+- `results.csv` — machine-readable output (default)
+
+A custom weights file can be specified with the global `--weights` flag:
 
 ```
 eyeballer.py --weights YOUR_WEIGHTS.h5 predict YOUR_FILE.png
 ```
 
-Or for a whole directory of files:
+### Output format
+
+By default results are written to `results.csv`. Pass `--format json` to get `results.json` instead, which contains the raw confidence scores for each label and pipelines cleanly into tools like `jq`, Burp, or Caido:
 
 ```
-eyeballer.py --weights YOUR_WEIGHTS.h5 predict PATH_TO/YOUR_FILES/
+eyeballer.py predict PATH_TO/YOUR_FILES/ --format json
 ```
 
-Eyeballer will spit the results back to you in human readable format (a `results.html` file so you can browse it easily) and machine readable format (a `results.csv` file).
+Example `results.json` entry:
+
+```json
+{
+  "filename": "screenshots/admin.example.com.png",
+  "custom404": 0.021,
+  "login": 0.893,
+  "webapp": 0.721,
+  "oldlooking": 0.043,
+  "parked": 0.009
+}
+```
+
+Extract high-confidence login pages with `jq`:
+
+```
+jq '[.[] | select(.login > 0.7)] | map(.filename)' results.json
+```
+
+### Thresholds
+
+The default confidence threshold for all labels is `0.5`. Override it globally:
+
+```
+eyeballer.py predict YOUR_FILES/ --threshold 0.6
+```
+
+Or tune individual labels independently with `--thresholds`, leaving the rest at the `--threshold` default. This is useful when you want higher recall on valuable targets (login pages) and higher precision on noise (parked domains):
+
+```
+eyeballer.py predict YOUR_FILES/ --thresholds login=0.3,parked=0.8
+```
+
+Valid label names: `custom404`, `login`, `webapp`, `oldlooking`, `parked`.
 
 ## Performance
 
