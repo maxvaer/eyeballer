@@ -2,10 +2,43 @@
 
 import click
 import csv
+import json
+
+import numpy as np
+from jinja2 import Template
 
 from eyeballer.model import EyeballModel, DATA_LABELS
 from eyeballer.visualization import HeatMap
-from jinja2 import Template
+
+
+class _FloatEncoder(json.JSONEncoder):
+    """Serialize numpy floats to plain Python floats."""
+    def default(self, obj):
+        if isinstance(obj, np.floating):
+            return float(obj)
+        return super().default(obj)
+
+
+def _parse_thresholds(ctx, param, value):
+    """Click callback: parse 'label=value,...' into a {label: float} dict."""
+    if not value:
+        return {}
+    result = {}
+    for pair in value.split(','):
+        pair = pair.strip()
+        if '=' not in pair:
+            raise click.BadParameter(f"Expected 'label=value', got '{pair}'")
+        label, val = pair.split('=', 1)
+        label = label.strip()
+        if label not in DATA_LABELS:
+            raise click.BadParameter(
+                f"Unknown label '{label}'. Valid labels: {', '.join(DATA_LABELS)}")
+        try:
+            result[label] = float(val.strip())
+        except ValueError:
+            raise click.BadParameter(
+                f"Value for '{label}' must be a float, got '{val.strip()}'")
+    return result
 
 
 @click.group(invoke_without_command=True)
@@ -37,10 +70,16 @@ def train(ctx, graphs, batchsize, epochs):
 
 @cli.command()
 @click.argument('screenshot')
-@click.option('--heatmap', default=False, is_flag=True, help="Create a heatmap graphfor the prediction")
-@click.option('--threshold', default=.5, type=float, help="Threshold confidence for labeling")
+@click.option('--heatmap', default=False, is_flag=True, help="Create a heatmap graph for the prediction")
+@click.option('--threshold', default=.5, type=float,
+              help="Confidence threshold applied to all labels (default: 0.5)")
+@click.option('--thresholds', default=None, callback=_parse_thresholds, is_eager=False,
+              help="Per-label thresholds, overrides --threshold for specified labels. "
+                   "Format: label=value,... e.g. login=0.3,parked=0.7")
+@click.option('--format', 'output_format', default='csv',
+              type=click.Choice(['csv', 'json']), help="Output format for multi-file results (default: csv)")
 @click.pass_context
-def predict(ctx, screenshot, heatmap, threshold):
+def predict(ctx, screenshot, heatmap, threshold, thresholds, output_format):
     model = EyeballModel(**ctx.obj['model_kwargs'])
     results = model.predict(screenshot)
 
@@ -50,40 +89,52 @@ def predict(ctx, screenshot, heatmap, threshold):
 
     if not results:
         print("Error: Input file does not exist")
-    if len(results) == 1:
-        print(results)
-    else:
-        with open("results.csv", "w", newline="") as csvfile:
-            fieldnames = ["filename", "custom404", "login", "webapp", "oldlooking", "parked"]
-            labelwriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            labelwriter.writeheader()
-            labelwriter.writerows(results)
+        return
 
-        print("Output written to results.csv")
-        buildHTML(processResults(results, threshold))
+    if len(results) == 1:
+        if output_format == 'json':
+            print(json.dumps(results[0], indent=2, cls=_FloatEncoder))
+        else:
+            print(results[0])
+    else:
+        if output_format == 'json':
+            with open("results.json", "w") as f:
+                json.dump(results, f, indent=2, cls=_FloatEncoder)
+            print("Output written to results.json")
+        else:
+            with open("results.csv", "w", newline="") as csvfile:
+                fieldnames = ["filename", "custom404", "login", "webapp", "oldlooking", "parked"]
+                labelwriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                labelwriter.writeheader()
+                labelwriter.writerows(results)
+            print("Output written to results.csv")
+
+        buildHTML(processResults(results, threshold, thresholds))
         print("HTML written to results.html")
 
 
-def processResults(results, threshold):
+def processResults(results, threshold, thresholds=None):
     '''Filter the initial results dictionary and reformat it for use in JS.
 
         Keyword arguments:
         results -- dictionary output from predict function
-
+        threshold -- default confidence threshold for all labels
+        thresholds -- optional dict of per-label threshold overrides
     '''
-    jsResults = {}
+    effective = {label: threshold for label in DATA_LABELS}
+    if thresholds:
+        effective.update(thresholds)
 
+    jsResults = {}
     for result in results:
         positiveTags = []
-
         for label, label_info in result.items():
-            if (label == 'filename'):
+            if label == 'filename':
                 pass
-            elif label_info > threshold:
+            elif label_info > effective.get(label, threshold):
                 positiveTags.append(label)
-
         jsResults[result['filename']] = positiveTags
-    return(jsResults)
+    return jsResults
 
 
 def buildHTML(jsResults):
