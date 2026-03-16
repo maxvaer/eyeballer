@@ -9,7 +9,7 @@ from jinja2 import Template
 
 
 @click.group(invoke_without_command=True)
-@click.option('--weights', default=None, type=click.Path(), help="Weights file for input/output")
+@click.option('--weights', default="eyeballer-v3.weights.h5", type=click.Path(), help="Weights file for input/output")
 @click.option('--summary/--no-summary', default=False, help="Print model summary at start")
 @click.option('--seed', default=None, type=int, help="RNG seed for data shuffling and transformations, defaults to random value")
 @click.pass_context

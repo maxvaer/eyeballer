@@ -114,6 +114,8 @@ venv.bak/
 *.csv
 *.txt
 results.html
+IMPROVEMENTS.md
+.claude/
 !requirements.txt
 !requirements-gpu.txt
 !tests/models/*

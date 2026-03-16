@@ -1,21 +1,11 @@
 import os
-import random
 import sys
 import progressbar
 
-# Prevent Tkinter Dependency
-import matplotlib
-matplotlib.use('agg')  # noqa: E402
-import matplotlib.pyplot as plt
-
 import numpy as np
-import pandas as pd
-import Augmentor
 import tensorflow as tf
-
+from PIL import Image
 from tensorflow.keras.applications.mobilenet import preprocess_input
-from sklearn.metrics import classification_report, accuracy_score, hamming_loss
-from eyeballer.augmentation import EyeballerAugmentation
 
 DATA_LABELS = ["custom404", "login", "webapp", "oldlooking", "parked"]
 
@@ -58,7 +48,7 @@ class EyeballModel:
             try:
                 self.model.load_weights(weights_file)
             except OSError:
-                print("ERROR: Unable to open weights file '{}'".foramt(weights_file))
+                print("ERROR: Unable to open weights file '{}'".format(weights_file))
                 sys.exit(-1)
             print("Loaded model from file.")
         else:
@@ -103,13 +93,12 @@ class EyeballModel:
         self.preprocess_training_function = augmentor.keras_preprocess_func()
 
     def train(self, epochs=20, batch_size=32, print_graphs=False):
-        """Train the model, making a new weights file at each successfull checkpoint. You'll probably need a GPU for this to realistically run.
-
-        Keyword arguments:
-        epochs -- The number of epochs to train for. (An epoch is one pass-through of the dataset)
-        batch_size -- How many images to batch together when training. Generally speaking, the higher the better, until you run out of memory.
-        print_graphs --- Whether or not to create accuracy and loss graphs. If true, they'll be written to accuracy.png and loss.png
-        """
+        """Train the model (not supported in this Keras 3 inference build)."""
+        raise NotImplementedError(
+            "Training is not supported in this build. "
+            "It requires Keras 2 / TensorFlow ≤ 2.15 plus Augmentor, pandas, matplotlib, and scikit-learn."
+        )
+        # --- dead code kept for reference only ---
         print("Training with seed: " + str(self.seed))
 
         self._init_labels()
@@ -234,9 +223,8 @@ class EyeballModel:
             # Load the image into memory
             img = None
             try:
-                img = tf.keras.preprocessing.image.load_img(screenshot, target_size=(self.image_width, self.image_height))
-                img = tf.keras.preprocessing.image.img_to_array(img)
-                img = np.expand_dims(img, axis=0)
+                img = Image.open(screenshot).convert('RGB').resize((self.image_width, self.image_height))
+                img = np.expand_dims(np.array(img, dtype=np.float32), axis=0)
                 img = preprocess_input(img)
             except IsADirectoryError:
                 print("\nWARN: Skipping directory: ", screenshot)
@@ -257,11 +245,12 @@ class EyeballModel:
         return results
 
     def evaluate(self, threshold=0.5):
-        """Evaluate performance against the persistent evaluation data set
-
-        Keyword arguments:
-        threshold -- Value between 0->1. The cutoff where the numerical prediction becomes boolean. Default: 0.5
-        """
+        """Evaluate model performance (not supported in this Keras 3 inference build)."""
+        raise NotImplementedError(
+            "Evaluation is not supported in this build. "
+            "It requires Keras 2 / TensorFlow ≤ 2.15 plus Augmentor, pandas, matplotlib, and scikit-learn."
+        )
+        # --- dead code kept for reference only ---
         # Prepare the data
         self._init_labels()
         data_generator = tf.keras.preprocessing.image.ImageDataGenerator(

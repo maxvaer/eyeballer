@@ -1,11 +1,6 @@
-Augmentor
-click
-matplotlib
-numpy
-pandas
-pillow
-scikit-learn
-tensorflow
-jinja2
+tensorflow-cpu>=2.16
 progressbar2
-scipy
+Pillow
+numpy
+click
+jinja2

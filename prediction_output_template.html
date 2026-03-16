@@ -78,14 +78,33 @@
         }
         pressedBtn.className += ' activePage';
     }
-    function buildHTML(rangeMin, rangeMax){
+    function buildHTML(rangeMin, rangeMax) {
         var html = '';
-        if (rangeMax > indexesToDisplay.length) rangeMax=indexesToDisplay.length;
-        for (var i = rangeMin; i < rangeMax; i++){
-            index=indexesToDisplay[i];
-            filename = Object.keys(results)[index];
-            html += ('<div class="filterDiv"><a href=' + filename + ' target="_blank"> ' + results[filename].toString().replace(/,/g, ' ') + '</a><img class="res_pic" src="' + filename + '"></div>');
+        if (rangeMax > indexesToDisplay.length) rangeMax = indexesToDisplay.length;
+
+        for (var i = rangeMin; i < rangeMax; i++) {
+            var index = indexesToDisplay[i];
+            var filename = Object.keys(results)[index];
+
+            // Handle absolute Windows paths (e.g. C:\Users\...)
+            if (/^[A-Za-z]:\\/.test(filename)) {
+                // Replace backslashes with forward slashes
+                filename = filename.replace(/\\/g, '/');
+                // Add file:/// prefix
+                filename = 'file:///' + filename;
+            }
+
+            // Build HTML
+            html += (
+                '<div class="filterDiv">' +
+                    '<a href="' + filename + '" target="_blank">' +
+                        results[Object.keys(results)[index]].toString().replace(/,/g, ' ') +
+                    '</a>' +
+                    '<img class="res_pic" src="' + filename + '">' +
+                '</div>'
+            );
         }
+
         document.getElementById('container').innerHTML = html;
     }
     window.onscroll = function() {scrollFunction()};
