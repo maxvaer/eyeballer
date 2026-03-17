@@ -42,7 +42,7 @@ def _parse_thresholds(ctx, param, value):
     return result
 
 
-@click.group(invoke_without_command=True)
+@click.group(invoke_without_command=True, context_settings={"help_option_names": ["-h", "--help"]})
 @click.option('--weights', default="eyeballer-v3.weights.h5", type=click.Path(), help="Weights file for input/output")
 @click.option('--summary/--no-summary', default=False, help="Print model summary at start")
 @click.option('--seed', default=None, type=int, help="RNG seed for data shuffling and transformations, defaults to random value")
@@ -78,7 +78,8 @@ def train(ctx, graphs, batchsize, epochs):
               help="Per-label thresholds, overrides --threshold for specified labels. "
                    "Format: label=value,... e.g. login=0.3,parked=0.7")
 @click.option('--format', 'output_format', default='csv',
-              type=click.Choice(['csv', 'json']), help="Output format for multi-file results (default: csv)")
+              type=click.Choice(['csv', 'json']), show_default=True,
+              help="Output format for multi-file results.")
 @click.pass_context
 def predict(ctx, screenshot, heatmap, threshold, thresholds, output_format):
     model = EyeballModel(**ctx.obj['model_kwargs'])
